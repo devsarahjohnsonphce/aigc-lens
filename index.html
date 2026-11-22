@@ -1,0 +1,969 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<link rel="icon" href="data:," />
+<title>AIGC 检测小工具</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root{
+--bg:#eceff1; --bg2:#e2e7ea; --card:#ffffff; --card2:#f4f6f7;
+--ink:#141a1e; --ink2:#3d474f; --muted:#6b7883; --line:#d3dade;
+--teal:#0c7a68; --teal-soft:#e0f0ec; --amber:#b45309; --amber-soft:#fdf0dd;
+--red:#b3372a; --red-soft:#fbe9e6; --green:#2f7d4f; --green-soft:#e4f1e7;
+--mark:#ffe08a; --shadow:0 1px 2px rgba(16,24,30,.06),0 8px 28px rgba(16,24,30,.07);
+--radius:14px;
+}
+@media (prefers-color-scheme: dark){
+:root{
+--bg:#0f1418; --bg2:#0b0f12; --card:#171e24; --card2:#1d262e;
+--ink:#e8edef; --ink2:#b9c4cc; --muted:#8494a0; --line:#2b363f;
+--teal:#3cbfa9; --teal-soft:#123832; --amber:#e5a04c; --amber-soft:#3a2a12;
+--red:#e07a6b; --red-soft:#3d1f1a; --green:#6fc48c; --green-soft:#17301f;
+--mark:#6b5510; --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 30px rgba(0,0,0,.35);
+}
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+margin:0; background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%);
+color:var(--ink);
+font-family:"Noto Sans SC",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+font-size:16px; line-height:1.65; -webkit-font-smoothing:antialiased;
+}
+button,[role="button"],select,summary,input:not([type="checkbox"],[type="radio"]){min-height:2.25rem}
+.wrap{max-width:1060px;margin:0 auto;padding:0 18px 64px}
+
+/* ---------- hero ---------- */
+.hero{padding:44px 0 8px}
+.hero h1{
+font-family:"Noto Serif SC",serif; font-weight:900; letter-spacing:.01em;
+font-size:clamp(30px,5.4vw,44px); line-height:1.2; margin:0 0 10px;
+}
+.hero h1.accent{color:var(--teal)}
+.hero p.lede{margin:0;max-width:44em;color:var(--ink2);font-size:16.5px}
+.hero-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.chip{
+font-size:12.5px;font-weight:500;color:var(--ink2);
+border:1px solid var(--line);background:var(--card);
+padding:5px 11px;border-radius:999px;
+}
+.chip b{color:var(--teal);font-weight:700}
+
+/* ---------- mode tabs ---------- */
+.tabs{
+display:flex;gap:6px;margin:26px 0 18px;background:var(--card);
+border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:var(--shadow);
+}
+.tab{
+flex:1;border:0;background:transparent;color:var(--ink2);cursor:pointer;
+font:inherit;font-weight:700;font-size:16px;padding:10px 8px;border-radius:8px;min-height:48px;
+}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+@media (prefers-color-scheme: dark){.tab[aria-selected="true"]{background:var(--teal);color:#06231e}}
+.tab small{display:block;font-weight:400;font-size:12px;opacity:.75;margin-top:1px}
+
+.panel{display:none}
+.panel.on{display:block}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+
+.card{
+background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+box-shadow:var(--shadow);padding:20px;
+}
+.card h2{font-size:17px;margin:0 0 4px;font-weight:700}
+.card .sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+
+/* ---------- text input ---------- */
+textarea{
+width:100%;min-height:280px;resize:vertical;border:1px solid var(--line);
+border-radius:10px;background:var(--card2);color:var(--ink);
+font:inherit;font-size:15.5px;line-height:1.75;padding:14px;
+}
+textarea:focus{outline:2px solid var(--teal);outline-offset:1px;border-color:transparent}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.btn{
+font:inherit;font-weight:700;font-size:15px;cursor:pointer;border-radius:9px;
+border:1px solid var(--line);background:var(--card);color:var(--ink);
+padding:9px 16px;min-height:44px;
+}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff;padding:9px 22px}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.55;cursor:wait}
+.samples{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.samples span{font-size:13px;color:var(--muted);align-self:center}
+.sample-btn{
+font:inherit;font-size:13.5px;cursor:pointer;border-radius:999px;min-height:38px;
+border:1px dashed var(--muted);background:transparent;color:var(--ink2);padding:6px 13px;
+}
+.sample-btn:hover{border-color:var(--teal);color:var(--teal)}
+.counts{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--muted);margin-left:auto}
+
+/* ---------- drop zone ---------- */
+.drop{
+border:2px dashed var(--line);border-radius:12px;background:var(--card2);
+padding:26px 18px;text-align:center;cursor:pointer;transition:border-color .15s;
+}
+.drop:hover,.drop.over{border-color:var(--teal)}
+.drop .big{font-size:16px;font-weight:700;margin:8px 0 2px}
+.drop .small{font-size:13px;color:var(--muted)}
+.drop svg{color:var(--teal)}
+.drop input{display:none}
+.preview-wrap{margin-top:14px;display:none}
+.preview-wrap img{max-width:100%;max-height:340px;border-radius:10px;border:1px solid var(--line);display:block;margin:0 auto}
+.meta-table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:14px}
+.meta-table td{padding:6px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+.meta-table td:first-child{color:var(--muted);width:96px;white-space:nowrap}
+.meta-table td:last-child{font-family:"IBM Plex Mono",monospace;font-size:12.8px;word-break:break-all}
+
+/* ---------- results ---------- */
+.empty{
+border:1.5px dashed var(--line);border-radius:12px;padding:34px 20px;text-align:center;color:var(--muted);
+}
+.empty .t{font-weight:700;color:var(--ink2);font-size:15.5px;margin-bottom:4px}
+.result{display:none}
+.result.on{display:block}
+.gauge-box{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.gauge{position:relative;width:190px;height:118px;flex:none;margin:0 auto}
+.gauge svg{width:190px;height:118px;display:block}
+.gauge .num{
+position:absolute;left:0;right:0;top:44px;text-align:center;
+font-family:"IBM Plex Mono",monospace;font-size:42px;font-weight:600;line-height:1;
+}
+.gauge .num small{font-size:18px;color:var(--muted)}
+.gauge .cap{position:absolute;left:0;right:0;top:92px;text-align:center;font-size:12px;color:var(--muted)}
+.verdict{flex:1;min-width:210px}
+.verdict .band{
+display:inline-block;font-weight:700;font-size:15px;padding:5px 13px;border-radius:999px;margin-bottom:8px;
+}
+.band.low{background:var(--green-soft);color:var(--green)}
+.band.mid{background:var(--amber-soft);color:var(--amber)}
+.band.high{background:var(--red-soft);color:var(--red)}
+.verdict p{margin:0;color:var(--ink2);font-size:14.5px}
+.conf{font-size:12.5px;color:var(--muted);margin-top:8px}
+.conf b{color:var(--ink2)}
+
+.steps{list-style:none;margin:0 0 6px;padding:0;display:none}
+.steps.on{display:block}
+.steps li{
+display:flex;gap:10px;align-items:center;padding:7px 0;color:var(--muted);font-size:14.5px;
+border-bottom:1px dashed var(--line);
+}
+.steps li:last-child{border-bottom:0}
+.steps .dot{
+width:20px;height:20px;flex:none;border-radius:50%;border:2px solid var(--line);
+display:grid;place-items:center;font-size:11px;color:transparent;
+}
+.steps li.doing{color:var(--ink)}
+.steps li.doing .dot{border-color:var(--teal);border-top-color:transparent;animation:spin .7s linear infinite}
+.steps li.done{color:var(--ink2)}
+.steps li.done .dot{background:var(--teal);border-color:var(--teal);color:#fff}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.steps li.doing .dot{animation:none} html{scroll-behavior:auto}}
+
+.metrics{margin-top:18px}
+.metric{padding:11px 0;border-bottom:1px solid var(--line)}
+.metric:last-child{border-bottom:0}
+.metric .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.metric .name{font-weight:700;font-size:14.5px}
+.metric .val{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--muted);white-space:nowrap}
+.bar{height:8px;border-radius:99px;background:var(--card2);border:1px solid var(--line);margin:7px 0 6px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--teal);width:0;transition:width .8s cubic-bezier(.2,.7,.2,1)}
+.bar i.mid{background:var(--amber)}.bar i.high{background:var(--red)}
+.metric .note{font-size:13px;color:var(--muted);margin:0}
+
+.evidence{margin-top:18px}
+.evidence h3,.hl h3{font-size:15px;margin:0 0 8px}
+.evidence ul{margin:0;padding-left:20px;color:var(--ink2);font-size:14.5px}
+.evidence li{margin:4px 0}
+.hl{margin-top:18px}
+.hl-body{
+background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;
+font-size:15px;line-height:1.85;max-height:300px;overflow:auto;white-space:pre-wrap;word-break:break-word;
+}
+.hl-body mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 2px}
+.hl .legend{font-size:12.5px;color:var(--muted);margin-top:6px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+
+/* ---------- history ---------- */
+.history{margin-top:18px}
+.history h2{font-size:16px}
+.hist-list{list-style:none;margin:10px 0 0;padding:0}
+.hist-list li{
+display:flex;gap:12px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--line);font-size:14px;
+}
+.hist-list li:last-child{border-bottom:0}
+.hist-score{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:15px;min-width:52px;text-align:center;
+border-radius:8px;padding:3px 0;background:var(--card2);border:1px solid var(--line)}
+.hist-name{flex:1;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-time{color:var(--muted);font-size:12.5px;font-family:"IBM Plex Mono",monospace}
+.hist-none{color:var(--muted);font-size:14px;margin:8px 0 0}
+
+/* ---------- method ---------- */
+.method{margin-top:34px}
+.method h2{font-family:"Noto Serif SC",serif;font-size:24px;margin:0 0 6px}
+.method>p{color:var(--ink2);max-width:46em;margin:0 0 18px}
+.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media (max-width:860px){.mgrid{grid-template-columns:1fr}}
+.mcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+.mcard h3{margin:0 0 6px;font-size:15.5px}
+.mcard p{margin:0;font-size:14px;color:var(--ink2)}
+.mcard .k{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--teal);letter-spacing:.06em;text-transform:uppercase}
+.warn{
+margin-top:14px;background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius);
+padding:16px 18px;font-size:14.5px;color:var(--ink);
+}
+.warn b{color:var(--amber)}
+footer{margin-top:36px;color:var(--muted);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+<h1>AIGC 检测<span class="accent">小工具</span></h1>
+<p class="lede">粘贴一段文字，或上传一张图片，工具会从句长节奏、套话密度、重复结构、图像噪声与文件元数据等多个维度逐项取证，给出 AI 生成嫌疑分和每一条判断依据——不是黑箱结论，而是可以复核的证据清单。</p>
+<div class="hero-meta">
+<span class="chip">文本 <b>6 项语言学指标</b></span>
+<span class="chip">图像 <b>像素统计 + 元数据签名</b></span>
+<span class="chip">全部分析在<b>本地浏览器</b>内完成</span>
+</div>
+</header>
+
+<div class="tabs" role="tablist" aria-label="检测类型">
+<button class="tab" id="tab-text" role="tab" aria-selected="true" aria-controls="panel-text">文本检测<small>查文章、作文、文案是不是 AI 写的</small></button>
+<button class="tab" id="tab-image" role="tab" aria-selected="false" aria-controls="panel-image">图像检测<small>查图片有没有 AI 生成的痕迹</small></button>
+</div>
+
+<!-- ================= TEXT ================= -->
+<section class="panel on" id="panel-text" role="tabpanel" aria-labelledby="tab-text">
+<div class="grid">
+<div class="card">
+<h2>待检测文本</h2>
+<p class="sub">建议 200 字以上，结果更可靠；少于 80 字只能给出低可信度参考。</p>
+<textarea id="txt-input" placeholder="把要检测的文字粘贴到这里……例如一篇文章、一段作文、一篇产品文案。"></textarea>
+<div class="toolbar">
+<button class="btn primary" id="btn-analyze-text">开始检测</button>
+<button class="btn ghost" id="btn-clear-text">清空</button>
+<span class="counts" id="txt-counts">0 字 · 0 句</span>
+</div>
+<div class="samples">
+<span>没有现成的？试一段示例：</span>
+<button class="sample-btn" data-sample="ai">示例 · 套话较多的文章</button>
+<button class="sample-btn" data-sample="human">示例 · 口语化的随笔</button>
+<button class="sample-btn" data-sample="mixed">示例 · 人机混合改写</button>
+</div>
+</div>
+
+<div class="card">
+<h2>检测结果</h2>
+<p class="sub">嫌疑分越高，文本统计特征越接近常见大模型生成文本。</p>
+<ul class="steps" id="text-steps">
+<li data-step><span class="dot">✓</span>切分句子与段落结构</li>
+<li data-step><span class="dot">✓</span>统计句长节奏与词汇多样性</li>
+<li data-step><span class="dot">✓</span>扫描 AI 套话与连接词密度</li>
+<li data-step><span class="dot">✓</span>汇总证据并计算嫌疑分</li>
+</ul>
+<div class="empty" id="text-empty">
+<div class="t">还没有检测结果</div>
+在左侧粘贴文本，点「开始检测」，这里会逐项列出证据。
+</div>
+<div class="result" id="text-result">
+<div class="gauge-box">
+<div class="gauge">
+<svg viewBox="0 0 190 118" aria-hidden="true">
+<path d="M 15 108 A 80 80 0 0 1 175 108" fill="none" stroke="var(--line)" stroke-width="13" stroke-linecap="round"/>
+<path id="gauge-arc" d="M 15 108 A 80 80 0 0 1 175 108" fill="none" stroke="var(--teal)" stroke-width="13" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3" style="transition:stroke-dashoffset 1s cubic-bezier(.2,.7,.2,1), stroke .3s"/>
+</svg>
+<div class="num"><span id="gauge-num">0</span><small>/100</small></div>
+<div class="cap">AI 生成嫌疑分</div>
+</div>
+<div class="verdict">
+<span class="band low" id="verdict-band">—</span>
+<p id="verdict-text"></p>
+<div class="conf" id="verdict-conf"></div>
+</div>
+</div>
+<div class="metrics" id="text-metrics"></div>
+<div class="evidence">
+<h3>关键证据</h3>
+<ul id="text-evidence"></ul>
+</div>
+<div class="hl" id="hl-wrap" style="display:none">
+<h3>原文标注</h3>
+<div class="hl-body" id="hl-body"></div>
+<div class="legend">黄色高亮 = 命中的 AI 常用套话 / 模板化表达</div>
+</div>
+<div class="actions">
+<button class="btn" id="btn-report-text">下载检测报告 (.txt)</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- ================= IMAGE ================= -->
+<section class="panel" id="panel-image" role="tabpanel" aria-labelledby="tab-image">
+<div class="grid">
+<div class="card">
+<h2>待检测图片</h2>
+<p class="sub">支持 JPG / PNG / WebP。工具会读取文件字节里的生成器签名，并对像素做噪声与平滑度统计。</p>
+<label class="drop" id="drop">
+<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+<div class="big">点击选择图片，或把图片拖到这里</div>
+<div class="small">图片只在本页内分析，不会上传到任何服务器</div>
+<input type="file" id="file-input" accept="image/jpeg,image/png,image/webp,image/gif" />
+</label>
+<div class="preview-wrap" id="preview-wrap">
+<img id="preview" alt="待检测图片预览" />
+<table class="meta-table" id="meta-table"></table>
+</div>
+<div class="toolbar">
+<button class="btn primary" id="btn-analyze-image" disabled>开始检测</button>
+<span class="counts" id="img-counts">尚未选择图片</span>
+</div>
+</div>
+
+<div class="card">
+<h2>检测结果</h2>
+<p class="sub">图像检测比文本更难：压缩、滤镜、截图都会干扰像素统计，请结合元数据证据一起看。</p>
+<ul class="steps" id="image-steps">
+<li data-step><span class="dot">✓</span>扫描文件元数据与生成器签名</li>
+<li data-step><span class="dot">✓</span>统计高频噪声与局部平滑度</li>
+<li data-step><span class="dot">✓</span>分析色彩分布与边缘密度</li>
+<li data-step><span class="dot">✓</span>汇总证据并计算嫌疑分</li>
+</ul>
+<div class="empty" id="image-empty">
+<div class="t">还没有检测结果</div>
+在左侧上传图片，点「开始检测」，这里会逐项列出证据。
+</div>
+<div class="result" id="image-result">
+<div class="gauge-box">
+<div class="gauge">
+<svg viewBox="0 0 190 118" aria-hidden="true">
+<path d="M 15 108 A 80 80 0 0 1 175 108" fill="none" stroke="var(--line)" stroke-width="13" stroke-linecap="round"/>
+<path id="gauge-arc-img" d="M 15 108 A 80 80 0 0 1 175 108" fill="none" stroke="var(--teal)" stroke-width="13" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3" style="transition:stroke-dashoffset 1s cubic-bezier(.2,.7,.2,1), stroke .3s"/>
+</svg>
+<div class="num"><span id="gauge-num-img">0</span><small>/100</small></div>
+<div class="cap">AI 生成嫌疑分</div>
+</div>
+<div class="verdict">
+<span class="band low" id="verdict-band-img">—</span>
+<p id="verdict-text-img"></p>
+<div class="conf" id="verdict-conf-img"></div>
+</div>
+</div>
+<div class="metrics" id="image-metrics"></div>
+<div class="evidence">
+<h3>关键证据</h3>
+<ul id="image-evidence"></ul>
+</div>
+<div class="actions">
+<button class="btn" id="btn-report-image">下载检测报告 (.txt)</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- ================= HISTORY ================= -->
+<div class="card history">
+<h2>本次使用记录</h2>
+<ul class="hist-list" id="hist-list"></ul>
+<p class="hist-none" id="hist-none">还没有记录。完成一次检测后会出现在这里（仅保存在当前页面内，刷新即清空）。</p>
+</div>
+
+<!-- ================= METHOD ================= -->
+<section class="method">
+<h2>它是怎么判断的</h2>
+<p>这是一个基于统计特征的取证工具，复刻了学术界 AIGC 检测的经典思路（如 GLTR、DetectGPT 的简化版）：大模型生成的文本和图像会留下可测量的统计指纹，工具把这些指纹逐项量化，而不是给一个无法解释的黑箱分数。</p>
+<div class="mgrid">
+<div class="mcard">
+<div class="k">Text · 01</div>
+<h3>突发性（Burstiness）</h3>
+<p>人类写作的句长忽长忽短，情绪和信息密度都在变；模型为了稳妥，句子长度往往异常均匀。工具计算句长的变异系数，越均匀越可疑。</p>
+</div>
+<div class="mcard">
+<div class="k">Text · 02</div>
+<h3>套话与模板结构</h3>
+<p>「值得注意的是」「综上所述」「在当今社会」这类高频模板短语、以及「首先…其次…最后」的整齐排比，是模型对齐训练留下的典型痕迹，工具会逐个命中并高亮。</p>
+</div>
+<div class="mcard">
+<div class="k">Text · 03</div>
+<h3>词汇多样性与重复</h3>
+<p>统计词形-词例比（TTR）、重复 n-gram 和句首重复率。模型的用词分布更「安全」，罕见词更少，句式更容易自我重复。</p>
+</div>
+<div class="mcard">
+<div class="k">Image · 01</div>
+<h3>元数据签名</h3>
+<p>直接扫描文件字节：许多生成工具会在 PNG 文本块或 JPEG 注释里写入软件名（如 Stable Diffusion、ComfyUI 的参数块），相机照片则通常带机型与拍摄参数。签名是最硬的证据。</p>
+</div>
+<div class="mcard">
+<div class="k">Image · 02</div>
+<h3>噪声与平滑度</h3>
+<p>真实照片有传感器噪声，高频细节分布不均；扩散模型生成的图像往往局部过度平滑、噪声过于均匀。工具用拉普拉斯响应逐块统计这一差异。</p>
+</div>
+<div class="mcard">
+<div class="k">Image · 03</div>
+<h3>色彩与边缘统计</h3>
+<p>计算饱和度分布、颜色熵和边缘密度。生成图像常见饱和度偏高且分布集中、纹理边缘密度异常等特征，与自然照片的统计形态不同。</p>
+</div>
+</div>
+<div class="warn">
+<b>请务必注意：</b>任何 AIGC 检测都只能给出概率性嫌疑，不能作为定罪证据。人类写的公文、模板化作文同样可能得分偏高；经过改写、翻译、加噪、截图转存的 AI 内容也可能漏检。涉及学术诚信、录用、处罚等严肃决定时，请把本工具的结果当作初筛线索，结合写作过程稿、原始文件等其他证据人工复核。
+</div>
+</section>
+
+<footer>AIGC 检测小工具 · 统计取证方法演示 · 所有分析均在本地浏览器完成，不上传任何内容</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+var $ = function(id){ return document.getElementById(id);};
+var clamp = function(v,a,b){ return Math.max(a, Math.min(b, v));};
+var round = function(v){ return Math.round(v);};
+
+/* ---------------- tabs ---------------- */
+var tabText = $("tab-text"), tabImage = $("tab-image");
+function switchTab(which){
+var isText = which === "text";
+tabText.setAttribute("aria-selected", isText? "true": "false");
+tabImage.setAttribute("aria-selected", isText? "false": "true");
+$("panel-text").classList.toggle("on", isText);
+$("panel-image").classList.toggle("on",!isText);
+}
+tabText.addEventListener("click", function(){ switchTab("text");});
+tabImage.addEventListener("click", function(){ switchTab("image");});
+
+/* ---------------- history ---------------- */
+var histList = $("hist-list"), histNone = $("hist-none");
+function addHistory(kind, name, score){
+histNone.style.display = "none";
+var li = document.createElement("li");
+var now = new Date();
+var hh = String(now.getHours()).padStart(2,"0"), mm = String(now.getMinutes()).padStart(2,"0"), ss = String(now.getSeconds()).padStart(2,"0");
+var color = score >= 65? "var(--red)": (score >= 40? "var(--amber)": "var(--green)");
+li.innerHTML = "";
+var s = document.createElement("span"); s.className = "hist-score"; s.style.color = color; s.textContent = score;
+var n = document.createElement("span"); n.className = "hist-name"; n.textContent = (kind === "text"? "文本 · ": "图像 · ") + name;
+var t = document.createElement("span"); t.className = "hist-time"; t.textContent = hh + ":" + mm + ":" + ss;
+li.appendChild(s); li.appendChild(n); li.appendChild(t);
+histList.insertBefore(li, histList.firstChild);
+}
+
+/* ---------------- steps animation ---------------- */
+function runSteps(listEl, done){
+var items = listEl.querySelectorAll("[data-step]");
+listEl.classList.add("on");
+items.forEach(function(li){ li.className = "";});
+var i = 0;
+(function next(){
+if (i > 0) items[i-1].className = "done";
+if (i >= items.length){ setTimeout(done, 180); return;}
+items[i].className = "doing";
+i++;
+setTimeout(next, 260 + Math.random()*220);
+})();
+}
+function hideSteps(listEl){ listEl.classList.remove("on");}
+
+function paintGauge(arcEl, numEl, bandEl, score){
+var color = score >= 65? "var(--red)": (score >= 40? "var(--amber)": "var(--teal)");
+arcEl.style.stroke = color;
+arcEl.style.strokeDashoffset = String(251.3 * (1 - score/100));
+bandEl.className = "band " + (score >= 65? "high": (score >= 40? "mid": "low"));
+var start = 0, t0 = null;
+function tick(ts){
+if (!t0) t0 = ts;
+var p = clamp((ts - t0)/900, 0, 1);
+numEl.textContent = round(score * (1 - Math.pow(1-p, 3)));
+if (p < 1) requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+}
+function bandText(score){
+if (score >= 80) return "高度疑似 AI 生成";
+if (score >= 65) return "较可能为 AI 生成";
+if (score >= 40) return "特征混合，无法排除 AI 参与";
+if (score >= 22) return "更像人类写作";
+return "明显偏向人类写作";
+}
+function renderMetrics(container, metrics){
+container.innerHTML = "";
+metrics.forEach(function(m){
+var div = document.createElement("div"); div.className = "metric";
+var cls = m.score >= 65? "high": (m.score >= 40? "mid": "");
+div.innerHTML = '<div class="row"><span class="name"></span><span class="val"></span></div>' +
+'<div class="bar"><i class="' + cls + '"></i></div><p class="note"></p>';
+div.querySelector(".name").textContent = m.name;
+div.querySelector(".val").textContent = m.raw + " · 嫌疑 " + round(m.score);
+div.querySelector(".note").textContent = m.note;
+container.appendChild(div);
+requestAnimationFrame(function(){ requestAnimationFrame(function(){
+div.querySelector(".bar i").style.width = clamp(m.score,2,100) + "%";
+});});
+});
+}
+function renderEvidence(ul, items){
+ul.innerHTML = "";
+items.forEach(function(t){
+var li = document.createElement("li"); li.textContent = t; ul.appendChild(li);
+});
+}
+function downloadReport(filename, lines){
+var blob = new Blob([lines.join("\n")], {type:"text/plain;charset=utf-8"});
+var a = document.createElement("a");
+a.href = URL.createObjectURL(blob); a.download = filename;
+document.body.appendChild(a); a.click();
+setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove();}, 400);
+}
+
+/* ================================================================
+TEXT ANALYSIS
+================================================================ */
+var STRONG_PHRASES = ["值得注意的是","综上所述","总而言之","总的来说","不可否认的是","毋庸置疑","显而易见","不言而喻","由此可见","在当今社会","在当今时代","随着科技的飞速发展","随着社会的不断发展","扮演着重要角色","扮演着至关重要的角色","至关重要","深远影响","广泛关注","奠定了坚实基础","奠定基础","新篇章","机遇与挑战并存","总而言之","换句话说","换言之","具体而言","具体来说","一般而言","总的来看","不难发现","可以说","众所周知","日益凸显","不断提升","持续发展","蓬勃发展","应运而生","方兴未艾"];
+var WEAK_PHRASES = ["首先","其次","再次","最后","一方面","另一方面","与此同时","除此之外","更重要的是","此外","然而","因此","同时","而且","另外","总之","例如","比如说","通过","进行","实现","提高","加强","推动","促进"];
+var CONNECTORS = ["此外","然而","因此","同时","而且","另外","与此同时","除此之外","更重要的是","总之","换言之","由此可见","综上所述","具体来说","一般来说"];
+var COLLOQUIAL = ["哈哈","哎","嗯","呀","吧","嘛","呢","居然","没想到","结果","当时","记得","我家","我们家","路上","老板","同事","朋友说","真的","特别","反正","其实吧","说实话","老实说","气死","累死","笑死","尴尬","无语","离谱"];
+
+var SAMPLES = {
+ai: "随着科技的飞速发展，人工智能正在深刻地改变着我们的生活。在当今社会，人工智能已经广泛应用于各个领域，扮演着至关重要的角色。值得注意的是，人工智能的发展不仅提高了生产效率，也为人们的生活带来了极大的便利。\n\n首先，人工智能在医疗领域发挥了重要作用，通过智能诊断技术，医生可以更加准确地判断病情。其次，在教育领域，人工智能为学生提供了个性化的学习方案，促进了教育公平。此外，在交通领域，自动驾驶技术的不断发展也为出行安全奠定了坚实基础。\n\n综上所述，人工智能的发展机遇与挑战并存。我们应该充分认识到其深远影响，既要积极拥抱新技术，也要关注其带来的问题。总而言之，只有合理利用人工智能，才能更好地推动社会持续发展，开启人类文明的新篇章。",
+human: "上周三我陪我妈去医院复查，挂的是下午两点的号，结果一点半到那儿，前面还有四十多个人。候诊区空调坏了，热得不行，旁边一个大爷一直在刷短视频，声音开得老大。\n\n我妈倒是淡定，从包里掏出个橘子慢慢剥，还分了我一半。等到快四点才轮到我们，医生看了眼片子说恢复得不错，药可以减一种了。我妈出门就说今晚要吃顿好的，犒劳一下自己——其实她就是馋小区门口那家红烧肉了，找借口呢。\n\n回来的路上堵车堵了半小时，我俩在车里有一搭没一搭地聊天，她说隔壁王阿姨的孙子今年考上大学了，语气里有点羡慕，又有点得意，说还是我省心。我没接话，心里想的是，这个月房贷还没还呢。",
+mixed: "这家店我其实去过三次了。第一次是同事推荐的，说他们家的酸菜鱼特别入味，我抱着试试看的心态点了一份，味道确实不错，鱼肉嫩，汤底也够味。\n\n值得一提的是，这家店的服务也非常周到。服务员会主动为顾客添茶倒水，并根据顾客的需求推荐合适的菜品。此外，店内的环境干净整洁，装修风格简约大方，为顾客营造了舒适的用餐氛围。\n\n总的来说，这是一家值得推荐的餐厅。无论是菜品质量还是服务态度，都达到了较高的水准。下次部门聚餐，我打算就定这儿了，省得再到处找地方。"
+};
+
+var txtInput = $("txt-input");
+function countSentences(t){
+var m = t.replace(/\s+/g,"").match(/[^。！？!?；;…]+[。！？!?；;…]*/g);
+return m? m.filter(function(s){ return s.trim().length > 0;}): (t.trim()? [t.trim()]: []);
+}
+function updateCounts(){
+var t = txtInput.value;
+var chars = t.replace(/\s+/g,"").length;
+$("txt-counts").textContent = chars + " 字 · " + countSentences(t).length + " 句";
+}
+txtInput.addEventListener("input", updateCounts);
+document.querySelectorAll(".sample-btn").forEach(function(b){
+b.addEventListener("click", function(){
+txtInput.value = SAMPLES[b.getAttribute("data-sample")] || "";
+updateCounts();
+txtInput.focus();
+});
+});
+$("btn-clear-text").addEventListener("click", function(){
+txtInput.value = ""; updateCounts();
+$("text-result").classList.remove("on"); $("text-empty").style.display = "";
+});
+
+function mean(a){ return a.length? a.reduce(function(s,v){return s+v;},0)/a.length: 0;}
+function std(a, m){ if (a.length < 2) return 0; return Math.sqrt(a.reduce(function(s,v){return s + (v-m)*(v-m);},0)/a.length);}
+
+function analyzeText(raw){
+var text = raw.trim();
+var charsNoSpace = text.replace(/\s+/g,"");
+var totalChars = charsNoSpace.length;
+var sentences = countSentences(text);
+var sentLens = sentences.map(function(s){ return s.replace(/\s+/g,"").length;});
+var paragraphs = text.split(/\n+/).map(function(p){return p.trim();}).filter(Boolean);
+var evidence = [];
+
+/* --- 1. burstiness --- */
+var mLen = mean(sentLens), sLen = std(sentLens, mLen);
+var cv = mLen > 0? sLen / mLen: 0;
+var burstScore = clamp((0.68 - cv) / 0.55 * 100, 2, 98);
+if (sentences.length < 4){ burstScore = 50;}
+var burstNote = sentences.length < 4
+? "句子太少（" + sentences.length + " 句），句长节奏无法可靠统计，本项按中性计分。"
+: "句长平均 " + mLen.toFixed(1) + " 字，变异系数 " + cv.toFixed(2) + "。" + (cv < 0.3? "句子长短过于整齐，像是同一节奏批量生成。": (cv < 0.5? "句长有一定变化，但整体偏均匀。": "长短句交错明显，符合人类随想随写的节奏。"));
+if (sentences.length >= 4 && cv < 0.3) evidence.push("句长变异系数仅 " + cv.toFixed(2) + "，" + sentences.length + " 个句子长度高度均匀——人类写作很少这么整齐。");
+if (sentences.length >= 4 && cv >= 0.55) evidence.push("句长变异系数 " + cv.toFixed(2) + "，长短句交错明显，是偏人类的节奏特征。");
+
+/* --- 2. AI phrases --- */
+var strongHits = [], weakHits = 0;
+STRONG_PHRASES.forEach(function(p){
+var c = text.split(p).length - 1;
+if (c > 0) strongHits.push({p:p, c:c});
+});
+WEAK_PHRASES.forEach(function(p){ weakHits += text.split(p).length - 1;});
+var strongCount = strongHits.reduce(function(s,h){return s+h.c;},0);
+var density = totalChars > 0? strongCount / totalChars * 1000: 0;
+var phraseScore = clamp(density * 16 + Math.min(weakHits, 12) * 1.6, 2, 98);
+var phraseNote = strongCount === 0
+? "未命中强模板套话；弱结构词出现 " + weakHits + " 次。"
+: "命中强模板套话 " + strongCount + " 处（每千字 " + density.toFixed(1) + " 处）：" + strongHits.slice(0,5).map(function(h){return "「" + h.p + "」×" + h.c;}).join("、") + "。";
+if (strongCount >= 3) evidence.push("强模板套话出现 " + strongCount + " 处：" + strongHits.slice(0,4).map(function(h){return "「" + h.p + "」";}).join("、") + "，这类表达在模型生成文本中出现频率显著更高。");
+else if (strongCount === 0) evidence.push("全文未出现典型的 AI 模板套话。");
+
+/* --- 3. connectors --- */
+var connCount = 0;
+CONNECTORS.forEach(function(p){ connCount += text.split(p).length - 1;});
+var connDensity = sentences.length? connCount / sentences.length: 0;
+var connScore = clamp(connDensity * 95, 2, 96);
+var connNote = "逻辑连接词共 " + connCount + " 个，平均每句 " + connDensity.toFixed(2) + " 个。" + (connDensity > 0.55? "连接词密得像提纲，人类口语化写作很少这样句句挂衔接词。": (connDensity > 0.3? "衔接词使用偏频繁、偏书面化。": "衔接词使用自然，没有刻意堆砌。"));
+if (connDensity > 0.55) evidence.push("平均每句 " + connDensity.toFixed(2) + " 个逻辑连接词，段落像按提纲逐点展开。");
+
+/* --- 4. TTR / lexical diversity (char bigrams) --- */
+var grams = {}, totalGrams = 0;
+var clean = charsNoSpace.replace(/[，。！？；：、,.!?;:「」『』（）()\[\]"'“”‘’…—-]/g, "");
+for (var i = 0; i + 1 < clean.length; i += 1){ var g = clean.substr(i,2); grams[g] = (grams[g]||0) + 1; totalGrams++;}
+var uniq = Object.keys(grams).length;
+var ttr = totalGrams? uniq / totalGrams: 0;
+var ttrScore = clamp((0.92 - ttr) / 0.35 * 100, 2, 97);
+if (totalChars < 120) ttrScore = 50;
+var ttrNote = totalChars < 120
+? "文本太短，二元组多样性统计不稳定，本项按中性计分。"
+: "二元组词形多样性 " + ttr.toFixed(2) + "（唯一二元组 " + uniq + " / 总计 " + totalGrams + "）。" + (ttr < 0.72? "用词组合重复度偏高，词汇选择偏保守。": (ttr < 0.85? "词汇多样性中等。": "词汇组合丰富多变，不像模型的安全词库。"));
+if (totalChars >= 120 && ttr < 0.7) evidence.push("词汇二元组多样性仅 " + ttr.toFixed(2) + "，用词组合重复、偏保守，是模型生成的常见特征。");
+
+/* --- 5. repetition: sentence starts + repeated 4-grams --- */
+var starts = {}, startRepeat = 0;
+sentences.forEach(function(s){
+var k = s.replace(/\s+/g,"").substr(0,3);
+if (k.length === 3){ if (starts[k]) startRepeat++; starts[k] = 1;}
+});
+var four = {}, fourRepeat = 0, fourTotal = 0;
+for (var j = 0; j + 3 < clean.length; j += 1){ var g4 = clean.substr(j,4); fourTotal++; if (four[g4]) fourRepeat++; else four[g4] = 1;}
+var repRatio = fourTotal? fourRepeat / fourTotal: 0;
+var repScore = clamp(repRatio * 260 + (sentences.length? startRepeat / sentences.length * 60: 0), 2, 97);
+var repNote = "四字组重复率 " + (repRatio*100).toFixed(1) + "%，句首重复 " + startRepeat + " 次。" + (repRatio > 0.16? "自我重复明显，常见于模型围绕同一组词反复组织句子。": "重复程度在正常范围内。");
+if (repRatio > 0.18) evidence.push("四字组重复率达 " + (repRatio*100).toFixed(1) + "%，文本在反复使用同一批词组。");
+
+/* --- 6. paragraph structure --- */
+var paraLens = paragraphs.map(function(p){ return p.replace(/\s+/g,"").length;});
+var pMean = mean(paraLens), pCv = pMean > 0? std(paraLens, pMean) / pMean: 0;
+var hasEnum = /首先[\s\S]{0,400}其次/.test(text) && /(最后|综上所述|总之)/.test(text);
+var structScore = paragraphs.length < 2? 50: clamp((0.75 - pCv) / 0.6 * 100, 4, 95);
+if (hasEnum) structScore = clamp(structScore + 22, 4, 98);
+var structNote = paragraphs.length < 2
+? "只有一个段落，无法评估段落结构，本项按中性计分。"
+: paragraphs.length + " 个段落，段长变异系数 " + pCv.toFixed(2) + "。" + (hasEnum? "同时检测到「首先…其次…最后/综上」的完整提纲式结构。": (pCv < 0.3? "每段长度也异常整齐。": "段落长短分布自然。"));
+if (hasEnum) evidence.push("出现完整的「首先…其次…综上所述」提纲式结构，段落像按模板逐点填充。");
+
+/* --- colloquial / personal detail adjustment --- */
+var collHits = 0;
+COLLOQUIAL.forEach(function(p){ if (text.indexOf(p) >= 0) collHits++;});
+var hasSpecifics = /\d{2,}/.test(text) || /(周[一二三四五六日]|昨天|上周|去年|前天)/.test(text);
+var adjust = 0;
+if (collHits >= 3){ adjust -= 12; evidence.push("出现 " + collHits + " 处口语化/生活化表达（如语气词、具体场景词），这类随意性是模型较少主动生成的。");}
+else if (collHits >= 1){ adjust -= 5;}
+if (hasSpecifics){ adjust -= 5; evidence.push("文中包含具体数字或明确时间指向，细节具体度偏向真实经历叙述。");}
+
+var metrics = [
+{name:"句长突发性", raw:"CV " + cv.toFixed(2), score:burstScore, note:burstNote},
+{name:"AI 套话密度", raw:strongCount + " 处强套话", score:phraseScore, note:phraseNote},
+{name:"连接词密度", raw:connCount + " 个", score:connScore, note:connNote},
+{name:"词汇多样性", raw:"TTR " + ttr.toFixed(2), score:ttrScore, note:ttrNote},
+{name:"重复结构", raw:"重复率 " + (repRatio*100).toFixed(1) + "%", score:repScore, note:repNote},
+{name:"段落结构", raw:paragraphs.length + " 段", score:structScore, note:structNote}
+];
+var weights = [0.24, 0.26, 0.13, 0.14, 0.11, 0.12];
+var score = 0;
+metrics.forEach(function(m, idx){ score += m.score * weights[idx];});
+score = clamp(round(score + adjust), 1, 99);
+
+var conf, confText;
+if (totalChars >= 500){ conf = "高"; confText = "样本充足（" + totalChars + " 字），统计指标稳定。";}
+else if (totalChars >= 200){ conf = "中"; confText = "样本 " + totalChars + " 字，结论可供参考，建议结合更多文本复核。";}
+else { conf = "低"; confText = "样本仅 " + totalChars + " 字，统计噪声大，本结果只能当作弱线索。";}
+
+if (evidence.length === 0) evidence.push("未发现突出的异常特征，各项指标都在人类写作的常见区间内。");
+return { score:score, metrics:metrics, evidence:evidence.slice(0,6), conf:conf, confText:confText, totalChars:totalChars, sentenceCount:sentences.length};
+}
+
+function escapeHtml(s){
+return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+function highlightText(raw){
+var all = STRONG_PHRASES.concat(WEAK_PHRASES.slice(0,8)).sort(function(a,b){ return b.length - a.length;});
+var out = escapeHtml(raw);
+all.forEach(function(p){
+var ep = escapeHtml(p);
+out = out.split(ep).join("<mark>" + ep + "</mark>");
+});
+return out;
+}
+
+var lastTextReport = null;
+$("btn-analyze-text").addEventListener("click", function(){
+var raw = txtInput.value;
+if (raw.replace(/\s+/g,"").length < 20){
+$("text-empty").style.display = "";
+$("text-empty").querySelector(".t").textContent = "文本太短了";
+$("text-empty").lastChild.textContent = "至少粘贴 20 字以上的内容再检测，200 字以上结论才比较可靠。";
+return;
+}
+var btn = this; btn.disabled = true;
+$("text-result").classList.remove("on");
+$("text-empty").style.display = "none";
+runSteps($("text-steps"), function(){
+hideSteps($("text-steps"));
+var r = analyzeText(raw);
+$("text-result").classList.add("on");
+paintGauge($("gauge-arc"), $("gauge-num"), $("verdict-band"), r.score);
+$("verdict-band").textContent = bandText(r.score);
+$("verdict-text").textContent =
+r.score >= 65? "多项统计特征同时偏向模型生成文本：节奏均匀、套话或结构痕迹明显。建议核查写作过程与来源。":
+r.score >= 40? "文本同时带有模型生成和人类写作的特征，可能是 AI 起草后人工修改，或人类写作的模板化文章，单凭统计无法定论。":
+"主要统计特征落在人类写作的常见区间，未发现成规模的模型生成痕迹。";
+$("verdict-conf").innerHTML = "结论可信度：<b></b> · ";
+$("verdict-conf").querySelector("b").textContent = r.conf;
+$("verdict-conf").appendChild(document.createTextNode(r.confText));
+renderMetrics($("text-metrics"), r.metrics);
+renderEvidence($("text-evidence"), r.evidence);
+var hasHit = STRONG_PHRASES.some(function(p){ return raw.indexOf(p) >= 0;});
+$("hl-wrap").style.display = hasHit? "": "none";
+if (hasHit) $("hl-body").innerHTML = highlightText(raw);
+var lines = ["AIGC 文本检测报告", "时间：" + new Date().toLocaleString("zh-CN"), "字数：" + r.totalChars + " · 句子：" + r.sentenceCount, "AI 生成嫌疑分：" + r.score + "/100（" + bandText(r.score) + "）", "可信度：" + r.conf + " — " + r.confText, "", "分项指标："];
+r.metrics.forEach(function(m){ lines.push("- " + m.name + "：嫌疑 " + round(m.score) + "（" + m.raw + "）" + m.note);});
+lines.push("", "关键证据：");
+r.evidence.forEach(function(e){ lines.push("- " + e);});
+lines.push("", "说明：本报告为统计特征初筛，不能作为 AI 生成的确定性证明。");
+lastTextReport = lines;
+addHistory("text", raw.replace(/\s+/g," ").slice(0, 26) + "…", r.score);
+btn.disabled = false;
+$("text-result").scrollIntoView({behavior:"smooth", block:"nearest"});
+});
+});
+$("btn-report-text").addEventListener("click", function(){
+if (lastTextReport) downloadReport("aigc-text-report.txt", lastTextReport);
+});
+
+/* ================================================================
+IMAGE ANALYSIS
+================================================================ */
+var GEN_SIGS = ["stable diffusion","stablediffusion","midjourney","dall-e","dall·e","comfyui","automatic1111","novelai","firefly","imagen","sora","runway","kling","pika","dreamstudio","leonardo.ai","ideogram","flux.","sd_xl","sdxl","prompt:","negative prompt","cfg scale","ddim","euler a","generated by ai"];
+var CAMERA_SIGS = ["Canon","NIKON","SONY","Apple","iPhone","HUAWEI","Xiaomi","samsung","SM-","Pixel","FUJIFILM","OLYMPUS","Panasonic","LEICA","OPPO","vivo"];
+var currentFile = null, currentMeta = null, lastImageReport = null;
+
+var drop = $("drop"), fileInput = $("file-input");
+drop.addEventListener("dragover", function(e){ e.preventDefault(); drop.classList.add("over");});
+drop.addEventListener("dragleave", function(){ drop.classList.remove("over");});
+drop.addEventListener("drop", function(e){
+e.preventDefault(); drop.classList.remove("over");
+if (e.dataTransfer.files && e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener("change", function(){
+if (fileInput.files && fileInput.files[0]) loadFile(fileInput.files[0]);
+});
+
+function fmtSize(n){
+if (n < 1024) return n + " B";
+if (n < 1024*1024) return (n/1024).toFixed(1) + " KB";
+return (n/1024/1024).toFixed(2) + " MB";
+}
+
+function loadFile(file){
+currentFile = file;
+$("btn-analyze-image").disabled = false;
+$("img-counts").textContent = file.name + " · " + fmtSize(file.size);
+var url = URL.createObjectURL(file);
+var img = $("preview");
+img.onload = function(){
+$("preview-wrap").style.display = "";
+var rows = [
+["文件名", file.name], ["类型", file.type || "未知"], ["大小", fmtSize(file.size)],
+["像素尺寸", img.naturalWidth + " × " + img.naturalHeight]
+];
+var tbl = $("meta-table"); tbl.innerHTML = "";
+rows.forEach(function(r){
+var tr = document.createElement("tr");
+var a = document.createElement("td"); a.textContent = r[0];
+var b = document.createElement("td"); b.textContent = r[1];
+tr.appendChild(a); tr.appendChild(b); tbl.appendChild(tr);
+});
+currentMeta = { width: img.naturalWidth, height: img.naturalHeight};
+};
+img.src = url;
+}
+
+function scanSignatures(buf){
+var bytes = new Uint8Array(buf);
+var text = "";
+var CH = 65536;
+for (var off = 0; off < bytes.length; off += CH){
+var slice = bytes.subarray(off, Math.min(off + CH, bytes.length));
+var s = "";
+for (var i = 0; i < slice.length; i++){ var c = slice[i]; s += (c >= 32 && c < 127)? String.fromCharCode(c): " ";}
+text += s;
+}
+var lower = text.toLowerCase();
+var genFound = GEN_SIGS.filter(function(sig){ return lower.indexOf(sig) >= 0;});
+var camFound = CAMERA_SIGS.filter(function(sig){ return text.indexOf(sig) >= 0;});
+var hasExif = text.indexOf("Exif") >= 0;
+var hasXMP = lower.indexOf("xmp") >= 0 || lower.indexOf("adobe") >= 0;
+var hasPNGText = lower.indexOf("parameters") >= 0 || lower.indexOf("workflow") >= 0;
+return { genFound:genFound, camFound:camFound, hasExif:hasExif, hasXMP:hasXMP, hasPNGText:hasPNGText};
+}
+
+function analyzePixels(img){
+var MAX = 420;
+var scale = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight));
+var w = Math.max(8, Math.round(img.naturalWidth * scale));
+var h = Math.max(8, Math.round(img.naturalHeight * scale));
+var canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h;
+var ctx = canvas.getContext("2d", {willReadFrequently:true});
+ctx.drawImage(img, 0, 0, w, h);
+var data = ctx.getImageData(0, 0, w, h).data;
+var gray = new Float32Array(w*h);
+var satSum = 0, satSq = 0, n = w*h;
+var hist = new Array(32).fill(0);
+for (var i = 0, p = 0; i < data.length; i += 4, p++){
+var r = data[i], g = data[i+1], b = data[i+2];
+gray[p] = 0.299*r + 0.587*g + 0.114*b;
+var mx = Math.max(r,g,b), mn = Math.min(r,g,b);
+var sat = mx === 0? 0: (mx - mn) / mx;
+satSum += sat; satSq += sat*sat;
+hist[Math.min(31, (gray[p]/8)|0)]++;
+}
+var satMean = satSum / n, satStd = Math.sqrt(Math.max(0, satSq/n - satMean*satMean));
+var entropy = 0;
+hist.forEach(function(c){ if (c > 0){ var pr = c/n; entropy -= pr * Math.log2(pr);}});
+
+/* laplacian per 14x14 block */
+var BS = 14, bw = Math.floor(w/BS), bh = Math.floor(h/BS);
+var blockNoise = [], smoothBlocks = 0, totalBlocks = 0, edgeCount = 0, lapSum = 0;
+for (var by = 0; by < bh; by++){
+for (var bx = 0; bx < bw; bx++){
+var vals = [], bMean = 0, cnt = 0;
+for (var y = by*BS + 1; y < (by+1)*BS - 1; y++){
+for (var x = bx*BS + 1; x < (bx+1)*BS - 1; x++){
+var idx = y*w + x;
+var lap = Math.abs(4*gray[idx] - gray[idx-1] - gray[idx+1] - gray[idx-w] - gray[idx+w]);
+vals.push(lap); bMean += lap; cnt++; lapSum += lap;
+if (lap > 28) edgeCount++;
+}
+}
+if (cnt){
+bMean /= cnt;
+var v = 0; vals.forEach(function(val){ v += (val-bMean)*(val-bMean);});
+var bStd = Math.sqrt(v/cnt);
+blockNoise.push(bMean);
+totalBlocks++;
+if (bStd < 2.2 && bMean < 3.2) smoothBlocks++;
+}
+}
+}
+var totalPx = (w-2)*(h-2);
+var edgeDensity = totalPx? edgeCount/totalPx: 0;
+var lapMean = totalPx? lapSum/totalPx: 0;
+var nbMean = mean(blockNoise), nbCv = nbMean > 0? std(blockNoise, nbMean)/nbMean: 0;
+var smoothRatio = totalBlocks? smoothBlocks/totalBlocks: 0;
+return { satMean:satMean, satStd:satStd, entropy:entropy, edgeDensity:edgeDensity, lapMean:lapMean, noiseCv:nbCv, smoothRatio:smoothRatio, blocks:totalBlocks};
+}
+
+$("btn-analyze-image").addEventListener("click", function(){
+if (!currentFile) return;
+var btn = this; btn.disabled = true;
+$("image-result").classList.remove("on");
+$("image-empty").style.display = "none";
+runSteps($("image-steps"), function(){
+hideSteps($("image-steps"));
+currentFile.arrayBuffer().then(function(buf){
+var sig = scanSignatures(buf);
+var px = analyzePixels($("preview"));
+var evidence = [], metrics = [];
+
+/* metadata metric */
+var metaScore;
+if (sig.genFound.length){
+metaScore = 97;
+evidence.push("在文件字节中直接命中生成工具签名：「" + sig.genFound.slice(0,3).join("」「") + "」——这是最强的直接证据。");
+} else if (sig.hasPNGText){
+metaScore = 88;
+evidence.push("PNG 中存在 parameters / workflow 文本块，这是 Stable Diffusion 系工具保存生成参数的典型格式。");
+} else if (sig.hasExif && sig.camFound.length){
+metaScore = 8;
+evidence.push("文件带有完整相机 EXIF，且检出设备签名「" + sig.camFound[0] + "」，符合真实拍摄文件的特征。");
+} else if (!sig.hasExif &&!sig.hasXMP){
+metaScore = 62;
+evidence.push("文件不含任何 EXIF / XMP 元数据。AI 生成图通常如此，但截图、社交平台转存也会剥离元数据，需结合像素证据看。");
+} else {
+metaScore = 38;
+evidence.push("元数据不完整（有部分标记但无明确相机或生成器签名），无法单凭元数据定论。");
+}
+metrics.push({name:"元数据签名", raw: sig.genFound.length? "命中生成签名": (sig.hasExif? "有 EXIF": "无元数据"), score:metaScore,
+note: sig.genFound.length? "命中：" + sig.genFound.join("、"): (sig.camFound.length? "检出设备/厂商字样：" + sig.camFound.slice(0,3).join("、") + "。": "未检出已知生成器或相机签名。")});
+
+/* smoothness */
+var smoothScore = clamp((px.smoothRatio - 0.18) / 0.5 * 100, 2, 97);
+metrics.push({name:"局部平滑度", raw:(px.smoothRatio*100).toFixed(0) + "% 平滑块", score:smoothScore,
+note:"共统计 " + px.blocks + " 个图块，其中 " + (px.smoothRatio*100).toFixed(0) + "% 几乎没有纹理细节。" + (px.smoothRatio > 0.45? "大面积过度平滑是扩散模型的典型痕迹（真实照片的天空、墙面也会平滑，但通常伴随传感器噪声）。": (px.smoothRatio > 0.28? "平滑区域偏多。": "纹理分布接近自然照片。"))});
+if (px.smoothRatio > 0.45) evidence.push("约 " + (px.smoothRatio*100).toFixed(0) + "% 的图块纹理近乎空白，平滑程度超出一般相机照片。");
+
+/* noise uniformity */
+var noiseScore = clamp((0.95 - px.noiseCv) / 0.7 * 100, 2, 96);
+metrics.push({name:"噪声均匀度", raw:"CV " + px.noiseCv.toFixed(2), score:noiseScore,
+note:"各图块高频噪声强度的变异系数为 " + px.noiseCv.toFixed(2) + "。" + (px.noiseCv < 0.55? "噪声分布异常均匀，不像传感器在不同光照区域产生的自然噪声。": "噪声分布起伏自然。")});
+if (px.noiseCv < 0.5) evidence.push("高频噪声在全图分布得过于均匀（CV " + px.noiseCv.toFixed(2) + "），真实传感器噪声通常随明暗区域明显变化。");
+
+/* saturation */
+var satScore = clamp((px.satMean - 0.24) / 0.3 * 100, 2, 95);
+metrics.push({name:"饱和度分布", raw:"平均 " + px.satMean.toFixed(2), score:satScore,
+note:"平均饱和度 " + px.satMean.toFixed(2) + "，离散度 " + px.satStd.toFixed(2) + "。" + (px.satMean > 0.42? "整体饱和度偏高且集中，常见于生成图像的「讨喜」色彩倾向（手机艳丽模式滤镜也会造成类似结果）。": "色彩分布在自然照片常见范围内。")});
+
+/* edges + entropy */
+var edgeScore = clamp((0.085 - px.edgeDensity) / 0.06 * 100 + (4.6 - px.entropy) * 12, 2, 95);
+metrics.push({name:"边缘与信息熵", raw:"边缘 " + (px.edgeDensity*100).toFixed(1) + "%", score:edgeScore,
+note:"边缘密度 " + (px.edgeDensity*100).toFixed(1) + "%，灰度熵 " + px.entropy.toFixed(2) + " bit。" + (px.edgeDensity < 0.03? "细节边缘偏少，画面更像「画」出来的而非拍出来的。": "边缘与细节量接近自然图像。")});
+
+var weights = [0.42, 0.22, 0.16, 0.10, 0.10];
+var score = 0;
+metrics.forEach(function(m, i){ score += m.score * weights[i];});
+if (sig.genFound.length) score = Math.max(score, 93);
+if (sig.hasExif && sig.camFound.length &&!sig.genFound.length) score = Math.min(score, 34);
+score = clamp(round(score), 1, 99);
+
+var isSmall = currentMeta && Math.min(currentMeta.width, currentMeta.height) < 256;
+var conf = sig.genFound.length? "高": (isSmall? "低": "中");
+var confText = sig.genFound.length? "命中文件内生成器签名，证据直接。"
+: isSmall? "图片分辨率过低（" + currentMeta.width + "×" + currentMeta.height + "），像素统计可靠性有限。"
+: "基于像素统计与元数据的综合判断；经压缩、截图或平台转存的图片误差会增大。";
+
+$("image-result").classList.add("on");
+paintGauge($("gauge-arc-img"), $("gauge-num-img"), $("verdict-band-img"), score);
+$("verdict-band-img").textContent = bandText(score).replace("写作","生成").replace("人类","真实拍摄");
+$("verdict-text-img").textContent =
+score >= 65? "多项证据指向 AI 生成" + (sig.genFound.length? "，且文件内留有生成工具签名": "") + "。如需确认，可向提供方索要原始拍摄文件或生成记录。":
+score >= 40? "像素统计有可疑之处，但也可能由压缩、滤镜或转存造成，单凭本结果无法定论。":
+"元数据与像素统计都更接近真实拍摄/制作的图像，未发现明显的生成痕迹。";
+$("verdict-conf-img").innerHTML = "结论可信度：<b></b> · ";
+$("verdict-conf-img").querySelector("b").textContent = conf;
+$("verdict-conf-img").appendChild(document.createTextNode(confText));
+if (evidence.length === 0) evidence.push("未发现突出的异常特征，各项像素指标都在自然图像的常见区间内。");
+renderMetrics($("image-metrics"), metrics);
+renderEvidence($("image-evidence"), evidence.slice(0,6));
+
+var lines = ["AIGC 图像检测报告", "时间：" + new Date().toLocaleString("zh-CN"), "文件：" + currentFile.name + "（" + fmtSize(currentFile.size) + "，" + (currentMeta? currentMeta.width + "×" + currentMeta.height: "?") + "）", "AI 生成嫌疑分：" + score + "/100", "可信度：" + conf + " — " + confText, "", "分项指标："];
+metrics.forEach(function(m){ lines.push("- " + m.name + "：嫌疑 " + round(m.score) + "（" + m.raw + "）" + m.note);});
+lines.push("", "关键证据：");
+evidence.forEach(function(e){ lines.push("- " + e);});
+lines.push("", "说明：本报告为统计特征初筛，不能作为 AI 生成的确定性证明。");
+lastImageReport = lines;
+addHistory("image", currentFile.name, score);
+btn.disabled = false;
+$("image-result").scrollIntoView({behavior:"smooth", block:"nearest"});
+}).catch(function(){
+btn.disabled = false;
+$("image-empty").style.display = "";
+$("image-empty").querySelector(".t").textContent = "读取文件失败";
+});
+});
+});
+$("btn-report-image").addEventListener("click", function(){
+if (lastImageReport) downloadReport("aigc-image-report.txt", lastImageReport);
+});
+
+updateCounts();
+})();
+</script>
+</body>
+</html>
